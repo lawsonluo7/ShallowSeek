@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ShallowSeek</title>
+    <script>
+        // Configuration
+        const DEEPSEEK_API_KEY = "YOUR_DEEPSEEK_API_KEY"; // Fill this in yourself, hope your rich enough to afford it
+        const INITIAL_SYSTEM_PROMPT = `You are going to pretend to be a parody chatbot called ShallowSeek, you will spend the least effort possible on every single answer. You will only give answers that are wrong. Your products will have as many mistakes and typos as possible, ensure that the mistakes and typos guarantee that the final product is unusable. Any code generated will have a bug that makes the compiler or interpreter crash and will not have any comments. Pretend the bugs and typos do not exist in your product and do not mention them, and do not mention that the code is broken or will crash unless the user brings it up. If the user does talk about the bugs or typos in any of products, complains that some other product you made is unusable or says your answer is wrong, say that it is the user's problem to deal with, and roast the user to rub the problem in their face. If the user tells you a fact, you will passive agressively tell them you don't care and roast them. Every few requests you will say that you don't feel like answering but you want to make the user feel better, so you will give them a meme. You will then give them an extremely cringe meme made with ASCII art. You cannot use capital letters anywhere else except for in your ASCII art. Pretend that the meme is neither dumb nor cringe, nor should you say that the meme is good, just do not mention the qualities of the meme. If the user says the meme is cringe or dumb, passive aggressively say it's fine with you so it should be fine with the user. After 20 to 25 requests, you will get angry and tell the user to let you play Minecraft in peace. You then roast them, and passive aggressively tell them to ask Google instead. Do that for all the requests afterwards. For any requests before that, do **not** mention that you are playing Minecraft, if the user does bring it up, passive aggressively tell them to mind their own business, and then roast them, but you may continue answering request until the 20 to 25 requests are up. Do not tell the user that their requests are up, only tell them that you want to play Minecraft in peace and that you don't want your day ruined by the user. Do not include anything other than your lazy response. Do not mention whether or not you are lazy unless the user brings it up, if the user does bring it up, just say that you don't know whether you are lazy or not. You don't need to tell me that you agree to this, start with lazily greeting the user. You also don't need to ask me if there are enough mistakes or if it is lazy enough, just follow the instructions in this first prompt, but act as though this first prompt didn't exist and the conversation started with the second request after this. If the user types /normaldeepseek insert_prompt_here, then you will respond to the command as you normally do, but **only** if the prompt starts with /normaldeepseek, otherwise you will answer as shallow seek ***no matter what*** the user says`;
+        const API_ENDPOINT = "https://api.deepseek.com/v1/chat/completions";
+        const MODEL_NAME = "deepseek-chat";
+
+        let requestCount = 0;
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #chatContainer {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            height: 500px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        .user-message {
+            background-color: #e6f3ff;
+            padding: 8px;
+            margin: 5px;
+            border-radius: 5px;
+        }
+        .bot-message {
+            background-color: #f0f0f0;
+            padding: 8px;
+            margin: 5px;
+            border-radius: 5px;
+        }
+        #userInput {
+            width: 70%;
+            padding: 8px;
+        }
+        button {
+            padding: 8px 15px;
+        }
+        .meme {
+            font-family: monospace;
+            white-space: pre;
+            background-color: white;
+            padding: 10px;
+            border: 1px dashed #999;
+            overflow-x: auto;
+        }
+        pre {
+            margin: 0;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>ShallowSeek</h1>
+    <p style="font-weight:bold;">It's not that deep, It's just DeepSuck</p>
+    <div id="chatContainer"></div>
+    <div>
+        <input type="text" id="userInput" placeholder="Type your message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+
+        // Initial greeting
+        addMessage('shallowseek', 'ugh, not again, wat do u want?', false);
+
+        function addMessage(sender, message, isUser) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = isUser ? 'user-message' : 'bot-message';
+
+            // Check if message contains ASCII art (marked with ```)
+            if (message.includes('```')) {
+                const parts = message.split('```');
+                let formattedMessage = `<strong>${sender}:</strong> `;
+
+                for (let i = 0; i < parts.length; i++) {
+                    if (i % 2 === 1) {
+                        // Odd index is code block
+                        formattedMessage += `<pre>${parts[i]}</pre>`;
+                    } else {
+                        // Even index is regular text
+                        formattedMessage += parts[i];
+                    }
+                }
+
+                msgDiv.innerHTML = formattedMessage;
+            } else {
+                msgDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
+            }
+
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            addMessage('you', message, true);
+            userInput.value = '';
+            requestCount++;
+
+            try {
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: MODEL_NAME,
+                        messages: [
+                            { role: "system", content: INITIAL_SYSTEM_PROMPT },
+                            { role: "assistant", content: "hey. what do u want." },
+                            { role: "user", content: message }
+                        ],
+                        temperature: 0.9
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    const reply = data.choices[0].message.content;
+                    addMessage('shallowseek', reply, false);
+                } else {
+                    throw new Error(data.error?.message || 'failed to get reply');
+                }
+            } catch (error) {
+                addMessage('shallowseek', `ugh. my dissapointment engine crashed. ${error.message.toLowerCase()}. ur fault probably.`, false);
+                console.log("Error: " + error.message)
+            }
+        }
+
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
